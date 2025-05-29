@@ -94,6 +94,17 @@ The project is written in Go and uses the following key dependencies:
 
 - Rename `processFile` to something meaningful
 - Add types for WASM export
+- Refactor timed data, extraction
+- Test older GoPros
+- Select metadata to export
+- Tests
+- Refactoring
+- Optimize performance https://goperf.dev/01-common-patterns/mem-prealloc/#why-preallocation-matters
+
+## Resources
+- https://github.com/gopro/gpmf-parser
+- https://www.trekview.org/blog/injecting-camm-gpmd-telemetry-videos-part-3-mp4-structure-telemetry-trak/
+- https://developer.apple.com/documentation/quicktime-file-format/sample-to-chunk_atom/sample-to-chunk_table
 
 ## Contributing
 
