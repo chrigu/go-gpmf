@@ -21,11 +21,9 @@ func AddTimestampsToGyroDataWithDownsample(
 	var sampleScaleTime uint32 = 0
 
 	var accumulatedGyro parser.Gyroscope
-	var accumulatedTime int64 = 0
 	var count uint32 = 0
 	var lastSampleScaleTime int64 = 0
 
-	// Precompute factor to avoid repeated calculation
 	downsampleScaleThreshold := int64(telemetryMetadata.TimeScale * downsampleIntervalMs / 1000)
 
 	for _, timeToSample := range telemetryMetadata.TimeToSamples {
@@ -38,30 +36,29 @@ func AddTimestampsToGyroDataWithDownsample(
 			sampleCount := uint32(len(currentTimedGyros))
 
 			for _, gyro := range currentTimedGyros {
-				accumulatedTime += int64(sampleScaleTime)
-
 				// Accumulate gyro values
 				accumulatedGyro.X += gyro.X
 				accumulatedGyro.Y += gyro.Y
 				accumulatedGyro.Z += gyro.Z
 				count++
 
+				// Calculate individual timestamp for this sample
+				individualTime := calculateIndividualTime(telemetryMetadata.CreationTime, int64(sampleScaleTime), telemetryMetadata.TimeScale)
+
 				// Check if enough time has passed to downsample
 				if int64(sampleScaleTime)-lastSampleScaleTime >= downsampleScaleThreshold {
 					avgGyro := averageGyro(accumulatedGyro, count)
-					avgTime := calculateAverageTime(telemetryMetadata.CreationTime, accumulatedTime, count, telemetryMetadata.TimeScale)
 
 					TimedGyros = append(TimedGyros, TimedGyro{
 						Gyroscope: avgGyro,
 						TimeSample: TimeSample{
-							TimeStamp: avgTime,
+							TimeStamp: individualTime,
 						},
 					})
 
 					// Reset accumulators
 					accumulatedGyro = parser.Gyroscope{}
 					lastSampleScaleTime = int64(sampleScaleTime)
-					accumulatedTime = 0
 					count = 0
 				}
 
@@ -84,8 +81,7 @@ func averageGyro(accumulated parser.Gyroscope, count uint32) parser.Gyroscope {
 	}
 }
 
-// Helper: Compute average timestamp
-func calculateAverageTime(creationTime int64, accumulatedTime int64, count uint32, timeScale uint32) int64 {
-	averageScaleTime := accumulatedTime / int64(count)
-	return creationTime + 1000*(averageScaleTime/int64(timeScale))
+// Helper: Compute individual timestamp for a sample
+func calculateIndividualTime(creationTime int64, sampleScaleTime int64, timeScale uint32) int64 {
+	return int64(float64(sampleScaleTime)/float64(timeScale)*1000) + creationTime
 }
