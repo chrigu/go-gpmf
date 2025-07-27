@@ -61,7 +61,7 @@ Two functions are exposed:
 - Export of binary GPMF file
 - Export of telemetry data as JSON
 
-See https://github.com/chrigu/gopro-meta for a complete example.
+See https://github.com/chrigu/trailtrace for a complete example.
 
 #### Binary GPMF file
 
