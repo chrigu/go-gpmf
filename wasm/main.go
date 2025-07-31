@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"syscall/js"
 
@@ -23,27 +22,18 @@ func processFile(this js.Value, args []js.Value) any {
 
 	file := args[0]
 
-	// Create a new Promise
 	promise := js.Global().Get("Promise").New(js.FuncOf(func(this js.Value, resolveArgs []js.Value) any {
 		resolve := resolveArgs[0]
 
-		// Use FileReader to read the content
-		fileReader := js.Global().Get("FileReader").New()
-		fileReader.Set("onload", js.FuncOf(func(this js.Value, p []js.Value) any {
-			data := p[0].Get("target").Get("result")
-			buffer := js.Global().Get("Uint8Array").New(data)
+		size := file.Get("size").Int()
+		getBuf := js.Global().Get("getBuf")
 
-			// Convert Uint8Array to Go byte slice
-			byteSlice := make([]byte, buffer.Length())
-			js.CopyBytesToGo(byteSlice, buffer)
+		fmt.Printf("file size: %d\n", size)
 
-			fmt.Printf("Buffer Length: %d bytes\n", len(byteSlice))
-
-			// Create a bytes.Reader from the byte slice
-			buf := bytes.NewReader(byteSlice)
-
+		go func() {
+			src := NewSource(int64(size), getBuf)
 			// Extract GPS data
-			gpsData, gyroData, faceData, lumaData, colorData, sceneData := telemetry.ExtractTelemetryData(buf, false)
+			gpsData, gyroData, faceData, lumaData, colorData, sceneData := telemetry.ExtractTelemetryData(src, false)
 
 			// Resolve the Promise with the GPS data
 			resolve.Invoke(map[string]interface{}{
@@ -54,13 +44,9 @@ func processFile(this js.Value, args []js.Value) any {
 				"hueData":   convertHuesToJS(colorData),
 				"sceneData": convertSceneToJS(sceneData),
 			})
-			return nil
-		}))
+		}()
 
-		// Read file as ArrayBuffer
-		fileReader.Call("readAsArrayBuffer", file)
-
-		return nil // Promise will resolve later
+		return nil
 	}))
 
 	return promise
@@ -182,44 +168,23 @@ func exportGPMF(this js.Value, args []js.Value) any {
 
 	file := args[0]
 
-	// Create a new Promise
 	promise := js.Global().Get("Promise").New(js.FuncOf(func(this js.Value, resolveArgs []js.Value) any {
 		resolve := resolveArgs[0]
 
-		// Use FileReader to read the content
-		fileReader := js.Global().Get("FileReader").New()
-		fileReader.Set("onload", js.FuncOf(func(this js.Value, p []js.Value) any {
-			data := p[0].Get("target").Get("result")
-			buffer := js.Global().Get("Uint8Array").New(data)
+		size := file.Get("size").Int()
+		getBuf := js.Global().Get("getBuf")
 
-			// Convert Uint8Array to Go byte slice
-			byteSlice := make([]byte, buffer.Length())
-			js.CopyBytesToGo(byteSlice, buffer)
+		fmt.Printf("file size: %d\n", size)
 
-			fmt.Printf("Buffer Length: %d bytes\n", len(byteSlice))
+		go func() {
+			src := NewSource(int64(size), getBuf)
+			gpmfRaw, _ := mp4.ExtractTelemetryFromMp4(src)
 
-			// Create a bytes.Reader from the byte slice
-			buf := bytes.NewReader(byteSlice)
-
-			gpmfRaw, _ := mp4.ExtractTelemetryFromMp4(buf)
-			// if err != nil {
-			// 	fmt.Printf("Error extracting GPMF: %v\n", err)
-			// 	resolve.Invoke(js.Null())
-			// 	return nil
-			// }
-
-			// Create a new Uint8Array in JavaScript
 			jsGPMF := js.Global().Get("Uint8Array").New(len(gpmfRaw))
-			// Copy the GPMF data to the JavaScript Uint8Array
 			js.CopyBytesToJS(jsGPMF, gpmfRaw)
 
-			// Resolve the Promise with the GPMF data
 			resolve.Invoke(jsGPMF)
-			return nil
-		}))
-
-		// Read file as ArrayBuffer
-		fileReader.Call("readAsArrayBuffer", file)
+		}()
 
 		return nil
 	}))
