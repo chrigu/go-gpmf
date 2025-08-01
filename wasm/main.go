@@ -34,7 +34,6 @@ func processFile(this js.Value, args []js.Value) any {
 			src := NewSource(int64(size), getBuf)
 			// Extract GPS data
 			gpsData, gyroData, faceData, lumaData, colorData, sceneData := telemetry.ExtractTelemetryData(src, false)
-
 			// Resolve the Promise with the GPS data
 			resolve.Invoke(map[string]interface{}{
 				"gpsData":   convertGPSToJS(gpsData),

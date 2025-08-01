@@ -61,6 +61,8 @@ Two functions are exposed:
 - Export of binary GPMF file
 - Export of telemetry data as JSON
 
+The files in memory will be completely handeld in JS-land. This helps to processes files > 2GB. This is achieved by a shim [io.ReadSeeker](https://github.com/chrigu/go-gpmf/blob/main/wasm/source.go) that provides the reader for the parser. This reader calls a JS ([getBuf](https://github.com/chrigu/trailtrace/blob/main/public/worker_wasm.js)) function that provides the parser with just the data it needs for processing.
+
 See https://github.com/chrigu/trailtrace for a complete example.
 
 #### Binary GPMF file
@@ -92,6 +94,7 @@ The project is written in Go and uses the following key dependencies:
 
 ## Todos
 
+- Add simple HTML/JS Example
 - Rename `processFile` to something meaningful
 - Add types for WASM export
 - Refactor timed data, extraction
